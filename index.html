@@ -64,45 +64,69 @@
   </footer>
 
   <script type="module">
-    const contractAddress = "0xD0151f0535454Ee5Fe0C3B64F98E8Be9Ff50970E";
-    const abi = [
-      "function mint() external",
-      "function hasMinted(address) view returns (bool)"
-    ];
+  const contractAddress = "0xD0151f0535454Ee5Fe0C3B64F98E8Be9Ff50970E";
+  const abi = [
+    "function mint() external",
+    "function hasMinted(address) view returns (bool)"
+  ];
 
-    const mintBtn = document.getElementById("mintBtn");
-    const status = document.getElementById("status");
+  // 🟢 Besu EduNet network parameters
+  const eduNetParams = {
+    chainId: "0x67932", // ✅ your real Besu EduNet chain ID (424882)
+    chainName: "Besu EduNet (UniWA)",
+    nativeCurrency: { name: "EDU-D", symbol: "EDU-D", decimals: 18 },
+    rpcUrls: ["https://rpc.dimikog.org/rpc/"],
+    blockExplorerUrls: ["https://explorer.dimikog.org"]
+  };
 
-    mintBtn.onclick = async () => {
-      if (!window.ethereum) {
-        status.textContent = "❌ Δεν εντοπίστηκε πορτοφόλι MetaMask.";
-        return;
-      }
+  async function ensureBesuNetwork() {
+    const currentChain = await window.ethereum.request({ method: "eth_chainId" });
+    if (currentChain !== "0x67932") {
+      await window.ethereum.request({
+        method: "wallet_addEthereumChain",
+        params: [eduNetParams],
+      });
+    }
+  }
+
+  const mintBtn = document.getElementById("mintBtn");
+  const status = document.getElementById("status");
+
+  mintBtn.onclick = async () => {
+    if (!window.ethereum) {
+      status.textContent = "❌ Δεν εντοπίστηκε πορτοφόλι MetaMask.";
+      return;
+    }
+
+    try {
+      // ✅ Βεβαιωνόμαστε ότι ο χρήστης είναι στο σωστό δίκτυο
+      await ensureBesuNetwork();
 
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
       const contract = new ethers.Contract(contractAddress, abi, signer);
 
-      try {
-        status.textContent = "🔗 Σύνδεση με το δίκτυο QBFT Besu EduNet...";
-        const tx = await contract.mint({
-          gasPrice: ethers.utils.parseUnits("2", "gwei")
-        });
-        status.textContent = "⏳ Η συναλλαγή στάλθηκε!\n\nTx Hash:\n" + tx.hash +
-          "\n\nΜπορείς να την δεις στο Block Explorer.";
+      status.textContent = "🔗 Σύνδεση με το δίκτυο Besu EduNet...";
+      const tx = await contract.mint({
+        gasPrice: ethers.utils.parseUnits("2", "gwei"),
+      });
+      status.textContent =
+        "⏳ Η συναλλαγή στάλθηκε!\n\nTx Hash:\n" +
+        tx.hash +
+        "\n\nΜπορείς να την δεις στο Block Explorer.";
 
-        const receipt = await tx.wait(1);
-        if (receipt.status === 1) {
-          status.textContent = "✅ Το NFT δημιουργήθηκε επιτυχώς!\nTx: " + tx.hash;
-        } else {
-          status.textContent = "⚠️ Η συναλλαγή δεν ολοκληρώθηκε.";
-        }
-      } catch (err) {
-        console.error(err);
-        status.textContent = "❌ Σφάλμα: " + (err.message || err);
+      const receipt = await tx.wait(1);
+      if (receipt.status === 1) {
+        status.textContent = "✅ Το NFT δημιουργήθηκε επιτυχώς!\nTx: " + tx.hash;
+      } else {
+        status.textContent = "⚠️ Η συναλλαγή δεν ολοκληρώθηκε.";
       }
-    };
-  </script>
+    } catch (err) {
+      console.error(err);
+      status.textContent = "❌ Σφάλμα: " + (err.message || err);
+    }
+  };
+</script>
 </body>
 </html>
