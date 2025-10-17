@@ -85,7 +85,7 @@
       const contract = new ethers.Contract(contractAddress, abi, signer);
 
       try {
-        status.textContent = "🔗 Σύνδεση με το δίκτυο Besu EduNet...";
+        status.textContent = "🔗 Σύνδεση με το δίκτυο QBFT Besu EduNet...";
         const tx = await contract.mint({
           gasPrice: ethers.utils.parseUnits("2", "gwei")
         });
