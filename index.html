@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Εισαγωγικό NFT Μαθήματος – Besu EduNet</title>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js"></script>
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+      background: radial-gradient(circle at top, #0a1128 0%, #040716 80%);
+      color: #f8fafc;
+      text-align: center;
+      padding: 40px 10px;
+    }
+    h1 {
+      color: #38bdf8;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      color: #94a3b8;
+      font-weight: normal;
+      margin-top: 0;
+      margin-bottom: 2rem;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 600;
+      padding: 1rem 2rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      background: #1d4ed8;
+      transform: scale(1.05);
+    }
+    #status {
+      margin-top: 2rem;
+      font-size: 1rem;
+      color: #cbd5e1;
+      white-space: pre-line;
+    }
+    footer {
+      margin-top: 3rem;
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🎓 Εισαγωγικό NFT Μεταπτυχιακού Μαθήματος</h1>
+  <h2>Besu EduNet 2025 – Πανεπιστήμιο Δυτικής Αττικής</h2>
+
+  <button id="mintBtn">🔗 Συνδέσου & Κάνε Mint</button>
+  <p id="status"></p>
+
+  <footer>
+    © 2025 Blockchain & Web3 Lab – UniWA | <a href="https://dimikog.org" style="color:#38bdf8;">dimikog.org</a>
+  </footer>
+
+  <script type="module">
+    const contractAddress = "0xD0151f0535454Ee5Fe0C3B64F98E8Be9Ff50970E"; // replace if redeployed
+    const abi = [
+      "function mint() external",
+      "function hasMinted(address) view returns (bool)"
+    ];
+
+    const mintBtn = document.getElementById("mintBtn");
+    const status = document.getElementById("status");
+
+    mintBtn.onclick = async () => {
+      if (!window.ethereum) {
+        status.textContent = "❌ Δεν εντοπίστηκε πορτοφόλι MetaMask.";
+        return;
+      }
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(contractAddress, abi, signer);
+
+      try {
+        status.textContent = "🔗 Σύνδεση με το δίκτυο Besu EduNet...";
+        const tx = await contract.mint({
+          gasPrice: ethers.utils.parseUnits("2", "gwei")
+        });
+        status.textContent = "⏳ Η συναλλαγή στάλθηκε!\n\nTx Hash:\n" + tx.hash +
+          "\n\nΜπορείς να την δεις στο Block Explorer.";
+
+        const receipt = await tx.wait(1);
+        if (receipt.status === 1) {
+          status.textContent = "✅ Το NFT δημιουργήθηκε επιτυχώς!\nTx: " + tx.hash;
+        } else {
+          status.textContent = "⚠️ Η συναλλαγή δεν ολοκληρώθηκε.";
+        }
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Σφάλμα: " + (err.message || err);
+      }
+    };
+  </script>
+</body>
+</html>
