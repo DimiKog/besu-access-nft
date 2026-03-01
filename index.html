@@ -70,7 +70,7 @@
   const contractAddress = "0x5Ad2E39FAeE577D233059902eE94bc8df66d69c9";
   const abi = [
   "function mint() external",
-  "function hasMinted(address) view returns (bool)"
+  "function balanceOf(address) view returns (uint256)"
 ];
 
 const eduNetParams = {
@@ -112,14 +112,13 @@ const eduNetParams = {
 
     status.textContent = "🔎 Έλεγχος αν έχει ήδη γίνει mint...";
 
-    // ✅ CHECK BEFORE MINT
-    const alreadyMinted = await contract.hasMinted(userAddress);
+const balance = await contract.balanceOf(userAddress);
 
-    if (alreadyMinted) {
-      status.textContent =
-        "⚠️ Έχετε ήδη κάνει mint το NFT για αυτό το μάθημα.\n\nΔεν επιτρέπεται δεύτερο mint.";
-      return;
-    }
+if (balance.gt(0)) {
+  status.textContent =
+    "⚠️ Έχετε ήδη κάνει mint το NFT για αυτό το μάθημα.\n\nΔεν επιτρέπεται δεύτερο mint.";
+  return;
+}
 
     status.textContent = "🔗 Σύνδεση με το δίκτυο Besu EduNet...\n⏳ Υποβολή συναλλαγής...";
 
