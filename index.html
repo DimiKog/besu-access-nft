@@ -60,27 +60,26 @@
   <p id="status"></p>
 
   <footer>
-    © 2025 Υπολογιστικά συστήματα υψηλών επιδόσεων για εφαρμογές blockchain – UniWA | <a href="https://dimikog.org" style="color:#38bdf8;">dimikog.org</a>
+    © 2025 Blockchain & DLT – UniWA | <a href="https://dimikog.org" style="color:#38bdf8;">dimikog.org</a>
   </footer>
 
   <script type="module">
 
   import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.esm.min.js";
     
-  const contractAddress = "0xD0151f0535454Ee5Fe0C3B64F98E8Be9Ff50970E";
+  const contractAddress = "0x5Ad2E39FAeE577D233059902eE94bc8df66d69c9";
   const abi = [
-    "function mint() external",
-    "function hasMinted(address) view returns (bool)"
-  ];
+  "function mint() external",
+  "function hasMinted(address) view returns (bool)"
+];
 
-  // 🟢 Besu EduNet network parameters
-  const eduNetParams = {
-    chainId: "0x67932", // ✅ your real Besu EduNet chain ID (424882)
-    chainName: "Besu EduNet (UniWA)",
-    nativeCurrency: { name: "EDU-D", symbol: "EDU-D", decimals: 18 },
-    rpcUrls: ["https://rpc.dimikog.org/rpc/"],
-    blockExplorerUrls: ["https://explorer.dimikog.org"]
-  };
+const eduNetParams = {
+  chainId: "0x67932", // 424242
+  chainName: "Besu EduNet (UniWA)",
+  nativeCurrency: { name: "EDU-D", symbol: "EDU-D", decimals: 18 },
+  rpcUrls: ["https://rpc.dimikog.org/rpc/"],
+  blockExplorerUrls: ["https://explorer.dimikog.org"]
+};
 
   async function ensureBesuNetwork() {
     const currentChain = await window.ethereum.request({ method: "eth_chainId" });
@@ -96,40 +95,57 @@
   const status = document.getElementById("status");
 
   mintBtn.onclick = async () => {
-    if (!window.ethereum) {
-      status.textContent = "❌ Δεν εντοπίστηκε πορτοφόλι MetaMask.";
+  if (!window.ethereum) {
+    status.textContent = "❌ Δεν εντοπίστηκε πορτοφόλι MetaMask.";
+    return;
+  }
+
+  try {
+    await ensureBesuNetwork();
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const signer = provider.getSigner();
+    const userAddress = await signer.getAddress();
+
+    const contract = new ethers.Contract(contractAddress, abi, signer);
+
+    status.textContent = "🔎 Έλεγχος αν έχει ήδη γίνει mint...";
+
+    // ✅ CHECK BEFORE MINT
+    const alreadyMinted = await contract.hasMinted(userAddress);
+
+    if (alreadyMinted) {
+      status.textContent =
+        "⚠️ Έχετε ήδη κάνει mint το NFT για αυτό το μάθημα.\n\nΔεν επιτρέπεται δεύτερο mint.";
       return;
     }
 
-    try {
-      // ✅ Βεβαιωνόμαστε ότι ο χρήστης είναι στο σωστό δίκτυο
-      await ensureBesuNetwork();
+    status.textContent = "🔗 Σύνδεση με το δίκτυο Besu EduNet...\n⏳ Υποβολή συναλλαγής...";
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(contractAddress, abi, signer);
+    const tx = await contract.mint({
+      gasPrice: ethers.utils.parseUnits("2", "gwei"),
+    });
 
-      status.textContent = "🔗 Σύνδεση με το δίκτυο Besu EduNet...";
-      const tx = await contract.mint({
-        gasPrice: ethers.utils.parseUnits("2", "gwei"),
-      });
+    status.textContent =
+      "⏳ Η συναλλαγή στάλθηκε!\n\nTx Hash:\n" +
+      tx.hash +
+      "\n\nΜπορείς να την δεις στο Block Explorer.";
+
+    const receipt = await tx.wait(1);
+
+    if (receipt.status === 1) {
       status.textContent =
-        "⏳ Η συναλλαγή στάλθηκε!\n\nTx Hash:\n" +
-        tx.hash +
-        "\n\nΜπορείς να την δεις στο Block Explorer.";
-
-      const receipt = await tx.wait(1);
-      if (receipt.status === 1) {
-        status.textContent = "✅ Το NFT δημιουργήθηκε επιτυχώς!\nTx: " + tx.hash;
-      } else {
-        status.textContent = "⚠️ Η συναλλαγή δεν ολοκληρώθηκε.";
-      }
-    } catch (err) {
-      console.error(err);
-      status.textContent = "❌ Σφάλμα: " + (err.message || err);
+        "✅ Το NFT δημιουργήθηκε επιτυχώς!\n\nTx: " + tx.hash;
+    } else {
+      status.textContent = "⚠️ Η συναλλαγή δεν ολοκληρώθηκε.";
     }
-  };
+
+  } catch (err) {
+    console.error(err);
+    status.textContent = "❌ Σφάλμα: " + (err.message || err);
+  }
+};
 </script>
 </body>
 </html>
